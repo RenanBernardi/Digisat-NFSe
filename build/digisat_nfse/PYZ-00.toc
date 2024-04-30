@@ -1,4 +1,4 @@
-('C:\\DigisatHomologacao\\build\\digisat_nfse\\PYZ-00.pyz',
+('\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\build\\digisat_nfse\\PYZ-00.pyz',
  [('PIL',
    'C:\\Users\\renan\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python311\\site-packages\\PIL\\__init__.py',
    'PYMODULE'),
@@ -2100,9 +2100,17 @@
    'C:\\Program '
    'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.2288.0_x64__qbz5n2kfra8p0\\Lib\\tkinter\\__init__.py',
    'PYMODULE'),
+  ('tkinter.commondialog',
+   'C:\\Program '
+   'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.2288.0_x64__qbz5n2kfra8p0\\Lib\\tkinter\\commondialog.py',
+   'PYMODULE'),
   ('tkinter.constants',
    'C:\\Program '
    'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.2288.0_x64__qbz5n2kfra8p0\\Lib\\tkinter\\constants.py',
+   'PYMODULE'),
+  ('tkinter.messagebox',
+   'C:\\Program '
+   'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.2288.0_x64__qbz5n2kfra8p0\\Lib\\tkinter\\messagebox.py',
    'PYMODULE'),
   ('tkinter.ttk',
    'C:\\Program '

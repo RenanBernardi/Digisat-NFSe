@@ -5,9 +5,11 @@ import unicodedata
 import os
 from  tkinter import ttk
 import subprocess
-import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox
 import ctypes
+import shutil
+from tkinter import messagebox
+
 
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
@@ -18,12 +20,13 @@ def obter_info_cidade_homologada(cidade_ou_ibge: str) -> dict:
     try:
         tree = ET.parse('C:\\DigiSat\\SuiteG6\\Servidor\\Nfse\\CidadesHomologadas.xml')
         root = tree.getroot()
-
         cidade_ou_ibge = tratar_input(cidade_ou_ibge)
 
+
         for item in root:
+            print(f"Cidade no XML: {item.tag}")
             if item.tag.startswith(cidade_ou_ibge) or item.find('CodigoIBGE').text == cidade_ou_ibge:
-                
+                #ObservacoesNotasTomadas = item.find('ObservacoesNotasTomadas')
                 return {
                     'Padrao': item.find('Padrao').text,
                     'ConsultarNotasTomada': item.find('ConsultarNotasTomada').text,
@@ -33,7 +36,9 @@ def obter_info_cidade_homologada(cidade_ou_ibge: str) -> dict:
                     'Multiservicos': item.find('Multiservicos').text,
                     'Certificado': item.find('Certificado').text,
                     'Login': item.find('Login').text,
-                    'Senha': item.find('Senha').text
+                    'Senha': item.find('Senha').text,
+                    #'DadosObrigatoriosPrestador': ObservacoesNotasTomadas.find('DadosObrigatoriosPrestador').text,
+                    #'DadosObrigatoriosTomador': ObservacoesNotasTomadas.find('DadosObrigatoriosTomador').text
                 }
         return None
     except Exception as e:
@@ -104,53 +109,66 @@ def pesquisar_cidade_nacional():
         resultado_text.delete(1.0, tk.END)
         resultado_text.insert(tk.END, f"Por favor, coloque o nome da cidade ou o código IBGE.")    
 
+def run_as_administrator(command):
+    shell32 = ctypes.windll.shell32
+    if shell32.ShellExecuteW(None, "runas", "cmd.exe", f"/c {command}", None, 1) <= 32:
+        raise RuntimeError("Falha ao executar como administrador.")
+
+
 def conceder_permissao():
     pastas = ["C:\\DigiSat", "C:\\Program Files\\TecnoSpeed"]
 
     for pasta in pastas:
         comando = f'cacls "{pasta}" /E /T /C /G "Todos":F'
         subprocess.run(comando, shell=True)
-    print("Permissões alteradas com sucesso.")
-
-def run_as_administrator(command):
-    shell32 = ctypes.windll.shell32
-    if shell32.ShellExecuteW(None, "runas", "cmd.exe", f"/c {command}", None, 1) <= 32:
-        raise RuntimeError("Falha ao executar como administrador.")
+        messagebox.showinfo("Sucesso", "Permissões Alteradas :)")
 
 def parar_servicos():
     try:
-        caminho_bat = r'C:\\DigisatHomologacao\\sincronizadormongo.bat'
+        caminho_bat = r'\\192.168.0.250\Public\Colaboradores\Suporte\Renan\DigisatHomologacao\sincronizadormongo.bat'
         run_as_administrator(caminho_bat)
-        print("Serviços parados! :)")
+        subprocess.run(['net', 'stop', 'MongoDBDigisat'], shell=True, check=True)
+# Iniciar o serviço SincronizadorDigisat
+        subprocess.run(['net', 'stop', 'SincronizadorDigisat'], shell=True, check=True)
+        messagebox.showinfo("Sucesso", "Serviços parados! :)")
     except Exception as e:
         print(f"Erro ao parar os processos: {e}")
   
-
 def executar_backup():
     try:
-        # Caminho para o arquivo BAT
-        caminho_bat = r'C:\\DigisatHomologacao\\gerarbackup.bat'
-
-        # Executa o arquivo BAT como um processo separado
-        subprocess.run(caminho_bat, shell=True, check=True)
-
-        print("Backup gerado com sucesso!")
+        # Mapear o caminho UNC para uma unidade de rede (por exemplo, Z:)
+        subprocess.run(['net', 'use', 'Z:', '\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao'], shell=True, check=True)
+        # Definir o diretório de origem e destino para a cópia de arquivos
+        origem = r'C:\DigiSat\SuiteG6\Dados'
+        destino = r'Z:\DadosBkp'
+        # Executar a cópia de arquivos usando shutil
+        shutil.copytree(origem, destino)
+        messagebox.showinfo("Backup", "Backup gerado com sucesso! :)")
     except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar o backup: {e}")    
+        messagebox.showinfo("Error", f"Erro ao executar o backup: {e}")
+    except Exception as e:
+        print(f"Erro durante o processo de cópia: {e}")
+    finally:
+        # Remover o mapeamento da unidade de rede (Z:)
+        subprocess.run(['net', 'use', 'Z:', '/delete'], shell=True, check=True)
+
 
 def repair_mongo():
     try:
-        caminho_bat = r'C:\\DigisatHomologacao\\repairmongodb.bat'
+        caminho_bat = r'\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\repairmongodb.bat'
         subprocess.run(caminho_bat, shell=True, check=True)
+        messagebox.showinfo("Sucesso", "Reparo do mongo com sucesso :)")
     except Exception as e:
-        print(f"Erro ao executar a função :(")
-     
+        print("Erro"f"Erro ao executar a função: {e}")
+        
 root = tk.Tk()
 root.title("Digisat NFS-e")
 root.configure(bg='#051931')  # Define o estilo de fundo para o root
 
+
+
 #Icone do APP
-icon_path =('\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\Screenshot_2.ico')
+icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\nfse.ico")
 if os.path.exists(icon_path):
     root.iconbitmap(icon_path)
     
@@ -194,28 +212,28 @@ pesquisar_button_arquivo2.grid(row=0, column=3)
 # Botão para parar os serviços
 parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
 parar_servicos_button.pack()
-parar_servicos_button.place(x=505, y=430)
+parar_servicos_button.place(x=505, y=465)
 
 # Botão para conceder permissões
 conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
 conceder_permissao_button.pack()
-conceder_permissao_button.place(x=252, y=430)
+conceder_permissao_button.place(x=252, y=465)
 
 #Botão para gerar backup do sistema
 executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#051931')
 executar_backup_button.pack()
-executar_backup_button.place(x=59, y=430)
+executar_backup_button.place(x=59, y=465)
 
 #Botão para repar o mongo e também para serviços
 repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#051931')
 repair_mongo_button.pack()
-repair_mongo_button.place(x=150, y=430)
+repair_mongo_button.place(x=150, y=465)
 
 # Frame para exibir resultados
 resultado_frame = tk.Frame(root, bg='#051931')
 resultado_frame.pack(pady=20, padx=10)
 
-resultado_text = tk.Text(resultado_frame, width=50, height=10, padx=40, pady=40, fg='white', font=("Helvetica", 12, 'bold'), bg='#051931')
+resultado_text = tk.Text(resultado_frame, width=50, height=12, padx=40, pady=40, fg='white', font=("Helvetica", 12, 'bold'), bg='#051931')
 resultado_text.pack(side=tk.BOTTOM)
 
 #Versão release
@@ -227,6 +245,9 @@ versao_release.pack(side=tk.BOTTOM)
 rodape_label = tk.Label(root, text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
 rodape_label.pack(side=tk.BOTTOM)
 
-
-root.geometry("{largura}x{altura}".format(largura=(650), altura=(560)))
+largura= 650
+altura= 560
+root.geometry (f"{largura}x{altura}")
+root.resizable(False, False)
+#tk.Label(root, text="Essa janela não poder ser maximizada").pack()
 root.mainloop()
