@@ -9,7 +9,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox
 import ctypes
 import shutil
 from tkinter import messagebox
-
+from datetime import datetime
+from urllib.parse import quote_plus
+import pymongo
 
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
@@ -74,8 +76,6 @@ def obter_info_cidade_nacional(cidade_ou_codigo: str) -> dict:
     except Exception as e:
         print(f"Erro durante a pesquisa: {e}")
         return None
-
-
      
 def pesquisar_cidade_homologada():
     cidade_ou_codigo = cidade_entry.get()
@@ -160,19 +160,164 @@ def repair_mongo():
         messagebox.showinfo("Sucesso", "Reparo do mongo com sucesso :)")
     except Exception as e:
         print("Erro"f"Erro ao executar a função: {e}")
-        
+# Variável global para armazenar os documentos
+documentos = []
+
+def buscar():
+        global documentos  # Define 'documentos' como uma variável global
+        try:
+            data_inicio = entry_data_inicio.get()
+            data_fim = entry_data_fim.get()
+
+            # Configurações de conexão
+            CLIENT_USER = "root"
+            CLIENT_IP = "127.0.0.1"  # MongoDB está rodando localmente
+            CLIENT_PASSWORD = "|cSFu@5rFv#h8*="  # Senha do banco
+            CLIENT_PORT = 12220  # Porta do MongoDB
+            DATABASE_NAME = "DigisatServer"
+            COLLECTION_NAME = "Movimentacoes"
+
+            # Escapar nome de usuário e senha
+            escaped_user = quote_plus(CLIENT_USER)
+            escaped_password = quote_plus(CLIENT_PASSWORD)
+
+            # URI de conexão para o MongoDB local
+            MONGO_STRING = f"mongodb://{escaped_user}:{escaped_password}@{CLIENT_IP}:{CLIENT_PORT}/?authSource=admin"
+
+            # Conectar ao MongoDB
+            client = pymongo.MongoClient(MONGO_STRING)
+            db = client[DATABASE_NAME]
+            collection = db[COLLECTION_NAME]
+
+            documentos.clear()
+            query = {}
+            if data_inicio and data_fim:
+                try:
+                    data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+                    data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
+                    query["DataHoraEmissao"] = {"$gte": data_inicio_dt, "$lte": data_fim_dt}
+                except ValueError:
+                    messagebox.showwarning("Aviso", "Formato de data inválido. Use AAAA-MM-DD.")
+
+            documentos_encontrados = collection.find(query)
+
+            for documento in documentos_encontrados:
+                if "XmlTexto" in documento:
+                    documentos.append(documento)
+                
+            
+            if documentos:
+                messagebox.showinfo("Sucesso", "Documentos encontrados. Prontos para exportar.")
+            else:
+                messagebox.showwarning("Aviso", "Nenhum documento válido encontrado.")
+        except Exception as e:
+            documentos.clear()
+            messagebox.showerror("Erro", str(e))
+
+def exportar():
+        if documentos:
+            pasta_destino = os.path.join(os.path.expanduser("~"), "Desktop", "Movimentacoes")
+            if not os.path.exists(pasta_destino):
+                os.makedirs(pasta_destino)
+            for documento in documentos:
+                try:
+                    # Conteúdo XML
+                    conteudo_xml = documento["XmlTexto"]
+
+                    # Nome do arquivo para salvar na área de trabalho
+                    nome_arquivo = documento.get("ChaveAcesso", "Movimentacoes") + ".xml"
+                    # Caminho para a área de trabalho
+                    caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
+
+                    # Escrever o conteúdo XML em um arquivo
+                    with open(caminho_area_trabalho, "w", encoding="utf-8") as arquivo:
+                        arquivo.write(conteudo_xml)
+
+                except Exception as e:
+                    messagebox.showerror("Erro", f"Erro ao exportar documento {documento.get('Numero')}: {str(e)}")
+            
+            messagebox.showinfo("Sucesso", "Dados exportados com sucesso!")
+        else:
+            messagebox.showwarning("Aviso", "Nenhum documento encontrado. Por favor, busque primeiro.")
+    
+#Configuração Login
+def fazer_login():
+    global login_sucesso
+    login_sucesso = False
+
+    def tentar_login():
+        global login_sucesso    
+        usuario = entry_usuario.get()
+        senha = entry_senha.get()
+
+        # Verificar se as credenciais estão corretas
+        if usuario == "Suporte" and senha == "@|Sup0rT&|20@":
+            login_sucesso= True
+            messagebox.showinfo("Sucesso", "Login bem-sucedido!")
+            login_window.destroy()  # Fechar a janela de login
+            
+        else:
+            messagebox.showerror("Erro", "Credenciais inválidas. Tente novamente.")
+
+    def on_closing():
+        global login_sucesso
+        if not login_sucesso:
+            if messagebox.askokcancel("Sair", "Você quer sair sem fazer login?"):
+                login_window.destroy()
+        else:
+            login_window.destroy()        
+
+    # Criar a janela de login
+    login_window = tk.Tk()
+    login_window.title("Login")
+    login_window.configure(bg='#051931')
+    login_window.protocol(on_closing)
+   
+
+    # Logo da Digisat
+    logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
+    logo = logo.resize((280, 120))
+    logo = ImageTk.PhotoImage(logo)
+    logo_label = tk.Label(image=logo, bg='#051931')
+    logo_label.image = logo
+    logo_label.pack()
+
+ # Criar e posicionar os widgets na janela de login
+    label_usuario = tk.Label(login_window, text="Usuário:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
+    label_usuario.place(x=150, y=200)
+
+    entry_usuario = tk.Entry(login_window, fg='white', bg='#051931')
+    entry_usuario.place(x=210, y=200)
+
+    label_senha = tk.Label(login_window, text="Senha:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
+    label_senha.place(x=150, y=250)
+
+    entry_senha = tk.Entry(login_window, show="*", fg='white', bg='#051931')
+    entry_senha.place(x=210, y=250)
+
+    button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='white', bg='#051931')
+    button_login.pack()
+    button_login.place(x=200, y=300)
+                      
+# Iniciar o loop principal da janela de login
+    largura= 500
+    altura= 500
+    login_window.geometry (f"{largura}x{altura}")
+    login_window.resizable(False, False)
+    login_window.mainloop()
+
+fazer_login()  
+         
+         
 root = tk.Tk()
 root.title("Digisat NFS-e")
 root.configure(bg='#051931')  # Define o estilo de fundo para o root
-
-
 
 #Icone do APP
 icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\nfse.ico")
 if os.path.exists(icon_path):
     root.iconbitmap(icon_path)
     
-
 # Logo da Digisat
 logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
 logo = logo.resize((250, 100))
@@ -190,7 +335,6 @@ NFSe_label.image = NFSe
 NFSe_label.pack()
 NFSe_label.place(x=0, y=510)
 
-
 # Frame para a entrada de cidade
 pesquisa_frame = tk.Frame(root, bg='#051931')
 pesquisa_frame.pack(pady=1)
@@ -202,7 +346,33 @@ cidade_entry = tk.Entry(pesquisa_frame)
 cidade_entry.grid(row=0, column=1)
 cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())  
 
+label_data_inicio = tk.Label(text="Data Início CF-e(AAAA-MM-DD):", fg='white', bg='#051931')
+label_data_inicio.pack()
+label_data_inicio.place(x=90, y=380)
 
+entry_data_inicio = tk.Entry()
+entry_data_inicio.pack()
+entry_data_inicio.place(x=250, y=380)
+
+label_data_fim = tk.Label( text="Data Fim CF-e (AAAA-MM-DD):", fg='white', bg='#051931')
+label_data_fim.pack()
+label_data_fim.place(x=100, y=400)
+
+entry_data_fim = tk.Entry()
+entry_data_fim.pack()
+entry_data_fim.place(x=250, y=400)
+
+# Botão para buscar os CF-e
+button_buscar = tk.Button( text="Buscar CF-e", command=buscar, fg='white', bg='#051931')
+button_buscar.pack()
+button_buscar.place(x=350, y=465)
+
+#Botão para exportar os CF-e
+button_exportar = tk.Button( text="Exportar CF-e", command=exportar, fg='white', bg='#051931')
+button_exportar.pack()
+button_exportar.place(x=425, y=465)
+
+# Botão para pesquisar as cidades
 pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#051931')
 pesquisar_button_arquivo1.grid(row=0, column=2, padx=8)
 
@@ -212,32 +382,32 @@ pesquisar_button_arquivo2.grid(row=0, column=3)
 # Botão para parar os serviços
 parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
 parar_servicos_button.pack()
-parar_servicos_button.place(x=505, y=465)
+parar_servicos_button.place(x=510, y=465)
 
 # Botão para conceder permissões
 conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
 conceder_permissao_button.pack()
-conceder_permissao_button.place(x=252, y=465)
+conceder_permissao_button.place(x=225, y=465)
 
 #Botão para gerar backup do sistema
 executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#051931')
 executar_backup_button.pack()
-executar_backup_button.place(x=59, y=465)
+executar_backup_button.place(x=50, y=465)
 
 #Botão para repar o mongo e também para serviços
 repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#051931')
 repair_mongo_button.pack()
-repair_mongo_button.place(x=150, y=465)
+repair_mongo_button.place(x=130, y=465)
 
 # Frame para exibir resultados
 resultado_frame = tk.Frame(root, bg='#051931')
 resultado_frame.pack(pady=20, padx=10)
 
-resultado_text = tk.Text(resultado_frame, width=50, height=12, padx=40, pady=40, fg='white', font=("Helvetica", 12, 'bold'), bg='#051931')
+resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Helvetica", 10, 'bold'), bg='#051931')
 resultado_text.pack(side=tk.BOTTOM)
 
 #Versão release
-versao_release = "Versão 1.0.6"
+versao_release = "Versão 1.0.9"
 versao_release = tk.Label(root, text=versao_release, fg= 'white', bg= '#051931')
 versao_release.pack(side=tk.BOTTOM)
 
