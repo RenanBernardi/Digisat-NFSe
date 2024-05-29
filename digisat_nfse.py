@@ -239,7 +239,22 @@ def exportar():
             messagebox.showinfo("Sucesso", "Dados exportados com sucesso!")
         else:
             messagebox.showwarning("Aviso", "Nenhum documento encontrado. Por favor, busque primeiro.")
+
+def senha_alternada():
+        # Obter a data e hora atual
+    now = datetime.now()
     
+    # Extrair informações de data e hora
+    dia = now.day
+    mes = now.month
+    hora = now.hour
+    minuto = now.minute
+    
+    # Montar a senha temporária com base nas informações de data e hora
+    senha_temporaria = f"{dia:02d}{mes:02d}{hora:02d}{minuto:02d}"
+    
+    return senha_temporaria
+ 
 #Configuração Login
 def fazer_login():
     global login_sucesso
@@ -250,8 +265,9 @@ def fazer_login():
         usuario = entry_usuario.get()
         senha = entry_senha.get()
 
+        senha_temporaria = senha_alternada()
         # Verificar se as credenciais estão corretas
-        if usuario == "Suporte" and senha == "@|Sup0rT&|20@":
+        if usuario == "Suporte" and senha == senha_temporaria:
             login_sucesso= True
             messagebox.showinfo("Sucesso", "Login bem-sucedido!")
             login_window.destroy()  # Fechar a janela de login
@@ -260,18 +276,18 @@ def fazer_login():
             messagebox.showerror("Erro", "Credenciais inválidas. Tente novamente.")
 
     def on_closing():
-        global login_sucesso
         if not login_sucesso:
             if messagebox.askokcancel("Sair", "Você quer sair sem fazer login?"):
                 login_window.destroy()
         else:
             login_window.destroy()        
 
+    
     # Criar a janela de login
     login_window = tk.Tk()
     login_window.title("Login")
     login_window.configure(bg='#051931')
-    login_window.protocol(on_closing)
+    login_window.protocol("WM_DELETE_WINDOW", on_closing)
    
 
     # Logo da Digisat
@@ -281,13 +297,14 @@ def fazer_login():
     logo_label = tk.Label(image=logo, bg='#051931')
     logo_label.image = logo
     logo_label.pack()
+    logo_label.place(x=130, y=80)
 
- # Criar e posicionar os widgets na janela de login
+    # Criar e posicionar os widgets na janela de login
     label_usuario = tk.Label(login_window, text="Usuário:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
-    label_usuario.place(x=150, y=200)
+    label_usuario.place(x=150, y=220)
 
     entry_usuario = tk.Entry(login_window, fg='white', bg='#051931')
-    entry_usuario.place(x=210, y=200)
+    entry_usuario.place(x=210, y=220)
 
     label_senha = tk.Label(login_window, text="Senha:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
     label_senha.place(x=150, y=250)
@@ -297,127 +314,136 @@ def fazer_login():
 
     button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='white', bg='#051931')
     button_login.pack()
-    button_login.place(x=200, y=300)
-                      
-# Iniciar o loop principal da janela de login
+    button_login.place(x=210, y=300)
+                        
+    # Rodapé
+    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
+    rodape_label.pack(side=tk.BOTTOM)
+
+    # Iniciar o loop principal da janela de login
     largura= 500
     altura= 500
     login_window.geometry (f"{largura}x{altura}")
     login_window.resizable(False, False)
     login_window.mainloop()
 
-fazer_login()  
+    return login_sucesso    
+
+if fazer_login():
          
-         
-root = tk.Tk()
-root.title("Digisat NFS-e")
-root.configure(bg='#051931')  # Define o estilo de fundo para o root
+    root = tk.Tk()
+    root.title("Digisat NFS-e")
+    root.configure(bg='#051931')  # Define o estilo de fundo para o root
 
-#Icone do APP
-icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\nfse.ico")
-if os.path.exists(icon_path):
-    root.iconbitmap(icon_path)
-    
-# Logo da Digisat
-logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
-logo = logo.resize((250, 100))
-logo = ImageTk.PhotoImage(logo)
-logo_label = tk.Label(root, image=logo, bg='#051931')
-logo_label.image = logo
-logo_label.pack()
+    #Icone do APP
+    icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\nfse.ico")
+    if os.path.exists(icon_path):
+        root.iconbitmap(icon_path)
+        
+    # Logo da Digisat
+    logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
+    logo = logo.resize((250, 100))
+    logo = ImageTk.PhotoImage(logo)
+    logo_label = tk.Label(root, image=logo, bg='#051931')
+    logo_label.image = logo
+    logo_label.pack()
 
-#Logo NFS-e
-NFSe = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\NFSe.jpg")
-NFSe = NFSe.resize((70, 50))
-NFSe = ImageTk.PhotoImage(NFSe)
-NFSe_label = tk.Label(root, image=NFSe, bg='#051931')
-NFSe_label.image = NFSe
-NFSe_label.pack()
-NFSe_label.place(x=0, y=510)
+    #Logo NFS-e
+    NFSe = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\NFSe.jpg")
+    NFSe = NFSe.resize((70, 50))
+    NFSe = ImageTk.PhotoImage(NFSe)
+    NFSe_label = tk.Label(root, image=NFSe, bg='#051931')
+    NFSe_label.image = NFSe
+    NFSe_label.pack()
+    NFSe_label.place(x=0, y=510)
 
-# Frame para a entrada de cidade
-pesquisa_frame = tk.Frame(root, bg='#051931')
-pesquisa_frame.pack(pady=1)
 
-cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
-cidade_label.grid(row=0, column=0)
+    # Frame para a entrada de cidade
+    pesquisa_frame = tk.Frame(root, bg='#051931')
+    pesquisa_frame.pack(pady=1)
 
-cidade_entry = tk.Entry(pesquisa_frame)
-cidade_entry.grid(row=0, column=1)
-cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())  
+    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
+    cidade_label.grid(row=0, column=0)
 
-label_data_inicio = tk.Label(text="Data Início CF-e(AAAA-MM-DD):", fg='white', bg='#051931')
-label_data_inicio.pack()
-label_data_inicio.place(x=90, y=380)
+    cidade_entry = tk.Entry(pesquisa_frame)
+    cidade_entry.grid(row=0, column=1)
+    cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())  
 
-entry_data_inicio = tk.Entry()
-entry_data_inicio.pack()
-entry_data_inicio.place(x=250, y=380)
+    label_data_inicio = tk.Label(text="Data Início CF-e(AAAA-MM-DD):", fg='white', bg='#051931')
+    label_data_inicio.pack()
+    label_data_inicio.place(x=90, y=380)
 
-label_data_fim = tk.Label( text="Data Fim CF-e (AAAA-MM-DD):", fg='white', bg='#051931')
-label_data_fim.pack()
-label_data_fim.place(x=100, y=400)
+    entry_data_inicio = tk.Entry()
+    entry_data_inicio.pack()
+    entry_data_inicio.place(x=280, y=380)
 
-entry_data_fim = tk.Entry()
-entry_data_fim.pack()
-entry_data_fim.place(x=250, y=400)
+    label_data_fim = tk.Label( text="Data Fim CF-e (AAAA-MM-DD):", fg='white', bg='#051931')
+    label_data_fim.pack()
+    label_data_fim.place(x=100, y=400)
 
-# Botão para buscar os CF-e
-button_buscar = tk.Button( text="Buscar CF-e", command=buscar, fg='white', bg='#051931')
-button_buscar.pack()
-button_buscar.place(x=350, y=465)
+    entry_data_fim = tk.Entry()
+    entry_data_fim.pack()
+    entry_data_fim.place(x=280, y=400)
 
-#Botão para exportar os CF-e
-button_exportar = tk.Button( text="Exportar CF-e", command=exportar, fg='white', bg='#051931')
-button_exportar.pack()
-button_exportar.place(x=425, y=465)
 
-# Botão para pesquisar as cidades
-pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#051931')
-pesquisar_button_arquivo1.grid(row=0, column=2, padx=8)
+    # Botão para buscar os CF-e
+    button_buscar = tk.Button( text="Buscar CF-e", command=buscar, fg='white', bg='#051931')
+    button_buscar.pack()
+    button_buscar.place(x=350, y=465)
 
-pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='white', bg='#051931')
-pesquisar_button_arquivo2.grid(row=0, column=3)
+    #Botão para exportar os CF-e
+    button_exportar = tk.Button( text="Exportar CF-e", command=exportar, fg='white', bg='#051931')
+    button_exportar.pack()
+    button_exportar.place(x=425, y=465)
 
-# Botão para parar os serviços
-parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
-parar_servicos_button.pack()
-parar_servicos_button.place(x=510, y=465)
+    # Botão para pesquisar as cidades
+    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#051931')
+    pesquisar_button_arquivo1.grid(row=0, column=2, padx=8)
 
-# Botão para conceder permissões
-conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
-conceder_permissao_button.pack()
-conceder_permissao_button.place(x=225, y=465)
+    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='white', bg='#051931')
+    pesquisar_button_arquivo2.grid(row=0, column=3)
 
-#Botão para gerar backup do sistema
-executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#051931')
-executar_backup_button.pack()
-executar_backup_button.place(x=50, y=465)
+    # Botão para parar os serviços
+    parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
+    parar_servicos_button.pack()
+    parar_servicos_button.place(x=510, y=465)
 
-#Botão para repar o mongo e também para serviços
-repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#051931')
-repair_mongo_button.pack()
-repair_mongo_button.place(x=130, y=465)
+    # Botão para conceder permissões
+    conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
+    conceder_permissao_button.pack()
+    conceder_permissao_button.place(x=225, y=465)
 
-# Frame para exibir resultados
-resultado_frame = tk.Frame(root, bg='#051931')
-resultado_frame.pack(pady=20, padx=10)
+    #Botão para gerar backup do sistema
+    executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#051931')
+    executar_backup_button.pack()
+    executar_backup_button.place(x=50, y=465)
 
-resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Helvetica", 10, 'bold'), bg='#051931')
-resultado_text.pack(side=tk.BOTTOM)
+    #Botão para repar o mongo e também para serviços
+    repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#051931')
+    repair_mongo_button.pack()
+    repair_mongo_button.place(x=130, y=465)
 
-#Versão release
-versao_release = "Versão 1.0.9"
-versao_release = tk.Label(root, text=versao_release, fg= 'white', bg= '#051931')
-versao_release.pack(side=tk.BOTTOM)
+    # Frame para exibir resultados
+    resultado_frame = tk.Frame(root, bg='#051931')
+    resultado_frame.pack(pady=20, padx=10)
 
-# Rodapé
-rodape_label = tk.Label(root, text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
-rodape_label.pack(side=tk.BOTTOM)
+    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Helvetica", 10, 'bold'), bg='#051931')
+    resultado_text.pack(side=tk.BOTTOM)
 
-largura= 650
-altura= 560
-root.geometry (f"{largura}x{altura}")
-root.resizable(False, False)
-#tk.Label(root, text="Essa janela não poder ser maximizada").pack()
-root.mainloop()
+    #Versão release
+    versao_release = "Versão 1.0.9"
+    versao_release = tk.Label(root, text=versao_release, fg= 'white', bg= '#051931')
+    versao_release.pack(side=tk.BOTTOM)
+
+    # Rodapé
+    rodape_label = tk.Label(root,text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
+    rodape_label.pack(side=tk.BOTTOM)
+
+    largura= 650
+    altura= 560
+    root.geometry (f"{largura}x{altura}")
+    root.resizable(False, False)
+    #tk.Label(root, text="Essa janela não poder ser maximizada").pack()
+    root.mainloop()
+else:
+    print("Não logado")
