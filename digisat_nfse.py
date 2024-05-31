@@ -12,6 +12,7 @@ from tkinter import messagebox
 from datetime import datetime
 from urllib.parse import quote_plus
 import pymongo
+import ctypes
 
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
@@ -282,13 +283,18 @@ def fazer_login():
         else:
             login_window.destroy()        
 
-    
+   
+
     # Criar a janela de login
     login_window = tk.Tk()
     login_window.title("Login")
     login_window.configure(bg='#051931')
     login_window.protocol("WM_DELETE_WINDOW", on_closing)
-   
+    
+     #Icone do APP
+    icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
+    if os.path.exists(icon_path):
+        login_window.iconbitmap(icon_path)
 
     # Logo da Digisat
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
@@ -315,7 +321,16 @@ def fazer_login():
     button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='white', bg='#051931')
     button_login.pack()
     button_login.place(x=210, y=300)
-                        
+          
+    #Versão release
+    versao_release = "Versão 1.0.9"
+    versao_release = tk.Label(text=versao_release, fg= 'white', bg= '#051931')
+    versao_release.pack(side=tk.BOTTOM)
+    
+    #informativo suporte
+    suporte = tk.Label(text='Uso exclusivo suporte', bg= '#051931', fg='white', font=('Helvetica', 10, 'bold'))
+    suporte.pack(side=tk.BOTTOM)
+
     # Rodapé
     rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
     rodape_label.pack(side=tk.BOTTOM)
@@ -336,7 +351,7 @@ if fazer_login():
     root.configure(bg='#051931')  # Define o estilo de fundo para o root
 
     #Icone do APP
-    icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\nfse.ico")
+    icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
     if os.path.exists(icon_path):
         root.iconbitmap(icon_path)
         
@@ -387,12 +402,12 @@ if fazer_login():
 
 
     # Botão para buscar os CF-e
-    button_buscar = tk.Button( text="Buscar CF-e", command=buscar, fg='white', bg='#051931')
+    button_buscar = tk.Button( text="Buscar XML CF-e", command=buscar, fg='white', bg='#051931')
     button_buscar.pack()
-    button_buscar.place(x=350, y=465)
+    button_buscar.place(x=328, y=465)
 
     #Botão para exportar os CF-e
-    button_exportar = tk.Button( text="Exportar CF-e", command=exportar, fg='white', bg='#051931')
+    button_exportar = tk.Button( text="Exportar XML CF-e", command=exportar, fg='white', bg='#051931')
     button_exportar.pack()
     button_exportar.place(x=425, y=465)
 
@@ -406,22 +421,22 @@ if fazer_login():
     # Botão para parar os serviços
     parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
     parar_servicos_button.pack()
-    parar_servicos_button.place(x=510, y=465)
+    parar_servicos_button.place(x=535, y=465)
 
     # Botão para conceder permissões
     conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
     conceder_permissao_button.pack()
-    conceder_permissao_button.place(x=225, y=465)
+    conceder_permissao_button.place(x=205, y=465)
 
     #Botão para gerar backup do sistema
     executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#051931')
     executar_backup_button.pack()
-    executar_backup_button.place(x=50, y=465)
+    executar_backup_button.place(x=35, y=465)
 
     #Botão para repar o mongo e também para serviços
     repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#051931')
     repair_mongo_button.pack()
-    repair_mongo_button.place(x=130, y=465)
+    repair_mongo_button.place(x=113, y=465)
 
     # Frame para exibir resultados
     resultado_frame = tk.Frame(root, bg='#051931')
