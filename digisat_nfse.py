@@ -3,16 +3,17 @@ from PIL import Image, ImageTk
 from xml.etree import ElementTree as ET
 import unicodedata
 import os
-from  tkinter import ttk
 import subprocess
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox
 import ctypes
 import shutil
-from tkinter import messagebox
 from datetime import datetime
 from urllib.parse import quote_plus
 import pymongo
 import ctypes
+from tkinter import messagebox
+from PIL import Image as PilImage
+
 
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
@@ -138,20 +139,22 @@ def parar_servicos():
 def executar_backup():
     try:
         # Mapear o caminho UNC para uma unidade de rede (por exemplo, Z:)
-        subprocess.run(['net', 'use', 'Z:', '\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao'], shell=True, check=True)
+        #subprocess.run(['net', 'use', 'Z:', '\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao'], shell=True, check=True)
         # Definir o diretório de origem e destino para a cópia de arquivos
         origem = r'C:\DigiSat\SuiteG6\Dados'
-        destino = r'Z:\DadosBkp'
+        destino = r'D:\DadosBkp'
+        if not os.path.exists(destino):
+            os.makedirs(destino)
         # Executar a cópia de arquivos usando shutil
-        shutil.copytree(origem, destino)
+        shutil.copytree(origem, destino, dirs_exist_ok=True)
         messagebox.showinfo("Backup", "Backup gerado com sucesso! :)")
-    except subprocess.CalledProcessError as e:
-        messagebox.showinfo("Error", f"Erro ao executar o backup: {e}")
     except Exception as e:
-        print(f"Erro durante o processo de cópia: {e}")
-    finally:
+        messagebox.showinfo("Error", f"Erro ao executar o backup: {e}")
+    #except Exception as e:
+        #print(f"Erro durante o processo de cópia: {e}")
+    #finally:
         # Remover o mapeamento da unidade de rede (Z:)
-        subprocess.run(['net', 'use', 'Z:', '/delete'], shell=True, check=True)
+        #subprocess.run(['net', 'use', 'Z:', '/delete'], shell=True, check=True)
 
 
 def repair_mongo():
@@ -255,7 +258,7 @@ def senha_alternada():
     senha_temporaria = f"{dia:02d}{mes:02d}{hora:02d}{minuto:02d}"
     
     return senha_temporaria
- 
+
 #Configuração Login
 def fazer_login():
     global login_sucesso
@@ -282,19 +285,14 @@ def fazer_login():
                 login_window.destroy()
         else:
             login_window.destroy()        
-
    
-
     # Criar a janela de login
     login_window = tk.Tk()
     login_window.title("Login")
     login_window.configure(bg='#051931')
     login_window.protocol("WM_DELETE_WINDOW", on_closing)
     
-     #Icone do APP
-    icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
-    if os.path.exists(icon_path):
-        login_window.iconbitmap(icon_path)
+     
 
     # Logo da Digisat
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
@@ -305,14 +303,15 @@ def fazer_login():
     logo_label.pack()
     logo_label.place(x=130, y=80)
 
+
     # Criar e posicionar os widgets na janela de login
-    label_usuario = tk.Label(login_window, text="Usuário:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
+    label_usuario = tk.Label(login_window, text="Usuário:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
     label_usuario.place(x=150, y=220)
 
     entry_usuario = tk.Entry(login_window, fg='white', bg='#051931')
     entry_usuario.place(x=210, y=220)
 
-    label_senha = tk.Label(login_window, text="Senha:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
+    label_senha = tk.Label(login_window, text="Senha:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
     label_senha.place(x=150, y=250)
 
     entry_senha = tk.Entry(login_window, show="*", fg='white', bg='#051931')
@@ -320,20 +319,25 @@ def fazer_login():
 
     button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='white', bg='#051931')
     button_login.pack()
-    button_login.place(x=210, y=300)
+    button_login.place(x=225, y=300)
           
     #Versão release
-    versao_release = "Versão 1.0.9"
+    versao_release = "Versão 1.1.0"
     versao_release = tk.Label(text=versao_release, fg= 'white', bg= '#051931')
     versao_release.pack(side=tk.BOTTOM)
     
     #informativo suporte
-    suporte = tk.Label(text='Uso exclusivo suporte', bg= '#051931', fg='white', font=('Helvetica', 10, 'bold'))
+    suporte = tk.Label(text='Uso exclusivo suporte', bg= '#051931', fg='white', font=('Arial', 10, 'bold'))
     suporte.pack(side=tk.BOTTOM)
 
     # Rodapé
-    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
+    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Arial', 10, 'bold'))
     rodape_label.pack(side=tk.BOTTOM)
+
+    #Icone do APP
+    icon_path = ("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
+    if os.path.exists(icon_path):
+        login_window.iconbitmap(icon_path)
 
     # Iniciar o loop principal da janela de login
     largura= 500
@@ -374,10 +378,11 @@ if fazer_login():
 
 
     # Frame para a entrada de cidade
+    
     pesquisa_frame = tk.Frame(root, bg='#051931')
     pesquisa_frame.pack(pady=1)
 
-    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='white', font=("Helvetica", 10, "bold"), bg='#051931')
+    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
     cidade_label.grid(row=0, column=0)
 
     cidade_entry = tk.Entry(pesquisa_frame)
@@ -409,7 +414,7 @@ if fazer_login():
     #Botão para exportar os CF-e
     button_exportar = tk.Button( text="Exportar XML CF-e", command=exportar, fg='white', bg='#051931')
     button_exportar.pack()
-    button_exportar.place(x=425, y=465)
+    button_exportar.place(x=428, y=465)
 
     # Botão para pesquisar as cidades
     pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#051931')
@@ -442,16 +447,16 @@ if fazer_login():
     resultado_frame = tk.Frame(root, bg='#051931')
     resultado_frame.pack(pady=20, padx=10)
 
-    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Helvetica", 10, 'bold'), bg='#051931')
+    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Arial", 10, 'bold'), bg='#051931')
     resultado_text.pack(side=tk.BOTTOM)
 
     #Versão release
-    versao_release = "Versão 1.0.9"
+    versao_release = "Versão 1.1.0"
     versao_release = tk.Label(root, text=versao_release, fg= 'white', bg= '#051931')
     versao_release.pack(side=tk.BOTTOM)
 
     # Rodapé
-    rodape_label = tk.Label(root,text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Helvetica', 10, 'bold'))
+    rodape_label = tk.Label(root,text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Arial', 10, 'bold'))
     rodape_label.pack(side=tk.BOTTOM)
 
     largura= 650
