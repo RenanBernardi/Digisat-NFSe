@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import Tk
 from PIL import Image, ImageTk
 from xml.etree import ElementTree as ET
 import unicodedata
@@ -30,7 +31,7 @@ def obter_info_cidade_homologada(cidade_ou_ibge: str) -> dict:
         for item in root:
             print(f"Cidade no XML: {item.tag}")
             if item.tag.startswith(cidade_ou_ibge) or item.find('CodigoIBGE').text == cidade_ou_ibge:
-                #ObservacoesNotasTomadas = item.find('ObservacoesNotasTomadas')
+                
                 return {
                     'Padrao': item.find('Padrao').text,
                     'ConsultarNotasTomada': item.find('ConsultarNotasTomada').text,
@@ -41,8 +42,7 @@ def obter_info_cidade_homologada(cidade_ou_ibge: str) -> dict:
                     'Certificado': item.find('Certificado').text,
                     'Login': item.find('Login').text,
                     'Senha': item.find('Senha').text,
-                    #'DadosObrigatoriosPrestador': ObservacoesNotasTomadas.find('DadosObrigatoriosPrestador').text,
-                    #'DadosObrigatoriosTomador': ObservacoesNotasTomadas.find('DadosObrigatoriosTomador').text
+                    
                 }
         return None
     except Exception as e:
@@ -164,20 +164,20 @@ def repair_mongo():
         messagebox.showinfo("Sucesso", "Reparo do mongo com sucesso :)")
     except Exception as e:
         print("Erro"f"Erro ao executar a função: {e}")
-# Variável global para armazenar os documentos
+
 documentos = []
 
 def buscar():
-        global documentos  # Define 'documentos' como uma variável global
+        global documentos
         try:
             data_inicio = entry_data_inicio.get()
             data_fim = entry_data_fim.get()
 
             # Configurações de conexão
             CLIENT_USER = "root"
-            CLIENT_IP = "127.0.0.1"  # MongoDB está rodando localmente
-            CLIENT_PASSWORD = "|cSFu@5rFv#h8*="  # Senha do banco
-            CLIENT_PORT = 12220  # Porta do MongoDB
+            CLIENT_IP = "127.0.0.1"  
+            CLIENT_PASSWORD = "|cSFu@5rFv#h8*=" 
+            CLIENT_PORT = 12220
             DATABASE_NAME = "DigisatServer"
             COLLECTION_NAME = "Movimentacoes"
 
@@ -221,19 +221,35 @@ def buscar():
 def exportar():
         if documentos:
             pasta_destino = os.path.join(os.path.expanduser("~"), "Desktop", "Movimentacoes")
+            pasta_cancelados = os.path.join(pasta_destino, "Cancelado")
+            #pasta_inutilizados = os.path.join(pasta_destino, "Inutilizado")
+
             if not os.path.exists(pasta_destino):
                 os.makedirs(pasta_destino)
+            if not os.path.exists(pasta_cancelados):
+                os.makedirs(pasta_cancelados)
+            #if not os.path.exists(pasta_inutilizados):
+               # os.makedirs(pasta_inutilizados)
+
             for documento in documentos:
                 try:
-                    # Conteúdo XML
                     conteudo_xml = documento["XmlTexto"]
-
-                    # Nome do arquivo para salvar na área de trabalho
                     nome_arquivo = documento.get("ChaveAcesso", "Movimentacoes") + ".xml"
-                    # Caminho para a área de trabalho
-                    caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
+                     
 
-                    # Escrever o conteúdo XML em um arquivo
+                    situacao = documento.get("Situacao", {})
+                    descricao = situacao.get("Descricao", "Concluído").lower()
+
+                    #if descricao == "inutilizado":
+                       # caminho_area_trabalho = os.path.join(pasta_inutilizados, nome_arquivo)
+                    #else:
+                       # caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
+
+                    if descricao == "cancelado":               
+                        caminho_area_trabalho = os.path.join(pasta_cancelados, nome_arquivo)
+                    else:    
+                        caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
+                    
                     with open(caminho_area_trabalho, "w", encoding="utf-8") as arquivo:
                         arquivo.write(conteudo_xml)
 
@@ -258,8 +274,6 @@ def senha_alternada():
     senha_temporaria = f"{dia:02d}{mes:02d}{hora:02d}{minuto:02d}"
     
     return senha_temporaria
-
-#Configuração Login
 def fazer_login():
     global login_sucesso
     login_sucesso = False
@@ -274,7 +288,7 @@ def fazer_login():
         if usuario == "Suporte" and senha == senha_temporaria:
             login_sucesso= True
             messagebox.showinfo("Sucesso", "Login bem-sucedido!")
-            login_window.destroy()  # Fechar a janela de login
+            login_window.destroy()
             
         else:
             messagebox.showerror("Erro", "Credenciais inválidas. Tente novamente.")
@@ -292,9 +306,6 @@ def fazer_login():
     login_window.configure(bg='#051931')
     login_window.protocol("WM_DELETE_WINDOW", on_closing)
     
-     
-
-    # Logo da Digisat
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
     logo = logo.resize((280, 120))
     logo = ImageTk.PhotoImage(logo)
@@ -303,8 +314,6 @@ def fazer_login():
     logo_label.pack()
     logo_label.place(x=130, y=80)
 
-
-    # Criar e posicionar os widgets na janela de login
     label_usuario = tk.Label(login_window, text="Usuário:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
     label_usuario.place(x=150, y=220)
 
@@ -339,7 +348,6 @@ def fazer_login():
     if os.path.exists(icon_path):
         login_window.iconbitmap(icon_path)
 
-    # Iniciar o loop principal da janela de login
     largura= 500
     altura= 500
     login_window.geometry (f"{largura}x{altura}")
@@ -352,7 +360,7 @@ if fazer_login():
          
     root = tk.Tk()
     root.title("Digisat NFS-e")
-    root.configure(bg='#051931')  # Define o estilo de fundo para o root
+    root.configure(bg='#051931')
 
     #Icone do APP
     icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
@@ -378,7 +386,6 @@ if fazer_login():
 
 
     # Frame para a entrada de cidade
-    
     pesquisa_frame = tk.Frame(root, bg='#051931')
     pesquisa_frame.pack(pady=1)
 
@@ -463,7 +470,7 @@ if fazer_login():
     altura= 560
     root.geometry (f"{largura}x{altura}")
     root.resizable(False, False)
-    #tk.Label(root, text="Essa janela não poder ser maximizada").pack()
+   
     root.mainloop()
 else:
     print("Não logado")
