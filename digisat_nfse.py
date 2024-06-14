@@ -14,7 +14,8 @@ import pymongo
 import ctypes
 from tkinter import messagebox
 from PIL import Image as PilImage
-
+from datetime import datetime, timedelta
+import platform
 
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
@@ -168,97 +169,110 @@ def repair_mongo():
 documentos = []
 
 def buscar():
-        global documentos
+    global documentos
+    try:
+        data_inicio = entry_data_inicio.get()
+        data_fim = entry_data_fim.get()
+
+        # Configurações de conexão
+        CLIENT_USER = "root"
+        CLIENT_IP = "127.0.0.1"
+        CLIENT_PASSWORD = "|cSFu@5rFv#h8*="
+        CLIENT_PORT = 12220
+        DATABASE_NAME = "DigisatServer"
+        COLLECTION_NAME = "Movimentacoes"
+
+        # Escapar nome de usuário e senha
+        escaped_user = quote_plus(CLIENT_USER)
+        escaped_password = quote_plus(CLIENT_PASSWORD)
+
+        # URI de conexão para o MongoDB local
+        MONGO_STRING = f"mongodb://{escaped_user}:{escaped_password}@{CLIENT_IP}:{CLIENT_PORT}/?authSource=admin"
+
+        # Conectar ao MongoDB
+        client = pymongo.MongoClient(MONGO_STRING)
+        db = client[DATABASE_NAME]
+        collection = db[COLLECTION_NAME]
+
+        documentos.clear()
+        query = {}
+        if data_inicio and data_fim:
+            try:
+                data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+                data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
+                data_fim_dt += timedelta(days=1)  # Para incluir o dia final completo
+                query["DataHoraEmissao"] = {"$gte": data_inicio_dt, "$lt": data_fim_dt}
+            except ValueError:
+                messagebox.showwarning("Aviso", "Formato de data inválido. Use AAAA-MM-DD.")
+
+        documentos_encontrados = collection.find(query)
+
+        for documento in documentos_encontrados:
+            if "XmlTexto" in documento:
+                documentos.append(documento)
+
+        if documentos:
+            messagebox.showinfo("Sucesso", "Documentos encontrados. Prontos para exportar.")
+        else:
+            messagebox.showwarning("Aviso", "Nenhum documento válido encontrado.")
+    except Exception as e:
+        documentos.clear()
+        messagebox.showerror("Erro", str(e))
+
+def get_desktop_path():
+    if platform.system() == "Windows":
+        import winreg
         try:
-            data_inicio = entry_data_inicio.get()
-            data_fim = entry_data_fim.get()
-
-            # Configurações de conexão
-            CLIENT_USER = "root"
-            CLIENT_IP = "127.0.0.1"  
-            CLIENT_PASSWORD = "|cSFu@5rFv#h8*=" 
-            CLIENT_PORT = 12220
-            DATABASE_NAME = "DigisatServer"
-            COLLECTION_NAME = "Movimentacoes"
-
-            # Escapar nome de usuário e senha
-            escaped_user = quote_plus(CLIENT_USER)
-            escaped_password = quote_plus(CLIENT_PASSWORD)
-
-            # URI de conexão para o MongoDB local
-            MONGO_STRING = f"mongodb://{escaped_user}:{escaped_password}@{CLIENT_IP}:{CLIENT_PORT}/?authSource=admin"
-
-            # Conectar ao MongoDB
-            client = pymongo.MongoClient(MONGO_STRING)
-            db = client[DATABASE_NAME]
-            collection = db[COLLECTION_NAME]
-
-            documentos.clear()
-            query = {}
-            if data_inicio and data_fim:
-                try:
-                    data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
-                    data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
-                    query["DataHoraEmissao"] = {"$gte": data_inicio_dt, "$lte": data_fim_dt}
-                except ValueError:
-                    messagebox.showwarning("Aviso", "Formato de data inválido. Use AAAA-MM-DD.")
-
-            documentos_encontrados = collection.find(query)
-
-            for documento in documentos_encontrados:
-                if "XmlTexto" in documento:
-                    documentos.append(documento)
-                
-            
-            if documentos:
-                messagebox.showinfo("Sucesso", "Documentos encontrados. Prontos para exportar.")
-            else:
-                messagebox.showwarning("Aviso", "Nenhum documento válido encontrado.")
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
+            desktop = winreg.QueryValueEx(key, "Desktop")[0]
+            return desktop
         except Exception as e:
-            documentos.clear()
-            messagebox.showerror("Erro", str(e))
+            messagebox.showerror("Erro", f"Erro ao acessar o caminho da área de trabalho: {str(e)}")
+            return None
+    else:
+        home = os.path.expanduser("~")
+        desktop = os.path.join(home, "Desktop")
+        if not os.path.exists(desktop):
+            desktop = os.path.join(home, "Área de Trabalho")
+        return desktop
 
 def exportar():
-        if documentos:
-            pasta_destino = os.path.join(os.path.expanduser("~"), "Desktop", "Movimentacoes")
-            pasta_cancelados = os.path.join(pasta_destino, "Cancelado")
-            #pasta_inutilizados = os.path.join(pasta_destino, "Inutilizado")
+    if documentos:
+        desktop_dir = get_desktop_path()
+        if desktop_dir is None:
+            return
 
-            if not os.path.exists(pasta_destino):
-                os.makedirs(pasta_destino)
-            if not os.path.exists(pasta_cancelados):
-                os.makedirs(pasta_cancelados)
-            #if not os.path.exists(pasta_inutilizados):
-               # os.makedirs(pasta_inutilizados)
+        pasta_destino = os.path.join(desktop_dir, "Movimentacoes")
+        pasta_cancelados = os.path.join(pasta_destino, "Cancelado")
 
-            for documento in documentos:
-                try:
-                    conteudo_xml = documento["XmlTexto"]
-                    nome_arquivo = documento.get("ChaveAcesso", "Movimentacoes") + ".xml"
-                     
+        if not os.path.exists(pasta_destino):
+            os.makedirs(pasta_destino)
+        if not os.path.exists(pasta_cancelados):
+            os.makedirs(pasta_cancelados)
 
-                    situacao = documento.get("Situacao", {})
-                    descricao = situacao.get("Descricao", "Concluído").lower()
+        for documento in documentos:
+            try:
+                conteudo_xml = documento["XmlTexto"]
+                nome_arquivo = documento.get("ChaveAcesso", "Movimentacoes") + ".xml"
 
-                    #if descricao == "inutilizado":
-                       # caminho_area_trabalho = os.path.join(pasta_inutilizados, nome_arquivo)
-                    #else:
-                       # caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
+                situacao = documento.get("Situacao", {})
+                descricao = situacao.get("Descricao", "Concluído").lower()
 
-                    if descricao == "cancelado":               
-                        caminho_area_trabalho = os.path.join(pasta_cancelados, nome_arquivo)
-                    else:    
-                        caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
-                    
-                    with open(caminho_area_trabalho, "w", encoding="utf-8") as arquivo:
-                        arquivo.write(conteudo_xml)
+                if descricao == "cancelado":
+                    caminho_area_trabalho = os.path.join(pasta_cancelados, nome_arquivo)
+                else:
+                    caminho_area_trabalho = os.path.join(pasta_destino, nome_arquivo)
 
-                except Exception as e:
-                    messagebox.showerror("Erro", f"Erro ao exportar documento {documento.get('Numero')}: {str(e)}")
-            
-            messagebox.showinfo("Sucesso", "Dados exportados com sucesso!")
-        else:
-            messagebox.showwarning("Aviso", "Nenhum documento encontrado. Por favor, busque primeiro.")
+                with open(caminho_area_trabalho, "w", encoding="utf-8") as arquivo:
+                    arquivo.write(conteudo_xml)
+
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro ao exportar documento {documento.get('Numero')}: {str(e)}")
+
+        messagebox.showinfo("Sucesso", "Dados exportados com sucesso!")
+    else:
+        messagebox.showwarning("Aviso", "Nenhum documento encontrado. Por favor, busque primeiro.")
+
 
 def senha_alternada():
         # Obter a data e hora atual
@@ -344,7 +358,7 @@ def fazer_login():
     rodape_label.pack(side=tk.BOTTOM)
 
     #Icone do APP
-    icon_path = ("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
+    icon_path = r"\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico"
     if os.path.exists(icon_path):
         login_window.iconbitmap(icon_path)
 
@@ -363,7 +377,7 @@ if fazer_login():
     root.configure(bg='#051931')
 
     #Icone do APP
-    icon_path =("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico")
+    icon_path =r"\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico"
     if os.path.exists(icon_path):
         root.iconbitmap(icon_path)
         
