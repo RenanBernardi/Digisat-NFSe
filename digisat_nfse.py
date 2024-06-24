@@ -173,7 +173,7 @@ def buscar():
     try:
         data_inicio = entry_data_inicio.get()
         data_fim = entry_data_fim.get()
-
+        tipo_busca = var_tipo_busca.get()
         # Configurações de conexão
         CLIENT_USER = "root"
         CLIENT_IP = "127.0.0.1"
@@ -181,6 +181,7 @@ def buscar():
         CLIENT_PORT = 12220
         DATABASE_NAME = "DigisatServer"
         COLLECTION_NAME = "Movimentacoes"
+    
 
         # Escapar nome de usuário e senha
         escaped_user = quote_plus(CLIENT_USER)
@@ -196,21 +197,36 @@ def buscar():
 
         documentos.clear()
         query = {}
-        if data_inicio and data_fim:
-            try:
-                data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
-                data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
-                data_fim_dt += timedelta(days=1)  # Para incluir o dia final completo
-                query["DataHoraEmissao"] = {"$gte": data_inicio_dt, "$lt": data_fim_dt}
-            except ValueError:
-                messagebox.showwarning("Aviso", "Formato de data inválido. Use AAAA-MM-DD.")
-
+        
+        if tipo_busca == "CF-e" or tipo_busca == "NFC-e":
+                if data_inicio and data_fim:
+                    try:
+                        data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+                        data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
+                        data_fim_dt += timedelta(days=1)  # Para incluir o dia final completo
+                        query["DataHoraEmissao"] = {"$gte": data_inicio_dt, "$lt": data_fim_dt}
+                    except ValueError:
+                        messagebox.showwarning("Aviso", "Formato de data inválido. Use AAAA-MM-DD.")
+                
         documentos_encontrados = collection.find(query)
-
         for documento in documentos_encontrados:
-            if "XmlTexto" in documento:
-                documentos.append(documento)
-
+                if tipo_busca == "CF-e":
+                    if "XmlTexto" in documento:
+                        documentos.append(documento)
+                elif tipo_busca == "NFC-e": 
+                        _t = documento.get("_t",{})
+                        if "NotaFiscalConsumidorEletronica" in _t:
+                            Historicos = documento.get("Historicos", [])
+                            for historico in Historicos:                               
+                                    xml = historico.get("Xml")
+                                    
+                                    if xml:
+                                        documento_copia = documento.copy()
+                                        documento_copia["Xml"] = xml
+                                        documentos.append(documento_copia)
+                                        print(f"Documento adicionado: {documento_copia}")
+                                    else:
+                                        print(f"Valor de 'Xml' encontrado: {xml}")    
         if documentos:
             messagebox.showinfo("Sucesso", "Documentos encontrados. Prontos para exportar.")
         else:
@@ -252,7 +268,7 @@ def exportar():
 
         for documento in documentos:
             try:
-                conteudo_xml = documento["XmlTexto"]
+                conteudo_xml = documento.get("Xml") if "Xml" in documento else documento.get("XmlTexto")
                 nome_arquivo = documento.get("ChaveAcesso", "Movimentacoes") + ".xml"
 
                 situacao = documento.get("Situacao", {})
@@ -410,7 +426,11 @@ if fazer_login():
     cidade_entry.grid(row=0, column=1)
     cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())  
 
-    label_data_inicio = tk.Label(text="Data Início CF-e(AAAA-MM-DD):", fg='white', bg='#051931')
+    var_tipo_busca = tk.StringVar(value= "CF-e")
+    tk.Label(root, text="Tipo de Busca", fg='white', bg='#051931')
+    tk.OptionMenu(root, var_tipo_busca, "CF-e", "NFC-e"). pack()
+
+    label_data_inicio = tk.Label (text="Data Início(AAAA-MM-DD):", fg='white', bg='#051931')
     label_data_inicio.pack()
     label_data_inicio.place(x=90, y=380)
 
@@ -418,7 +438,7 @@ if fazer_login():
     entry_data_inicio.pack()
     entry_data_inicio.place(x=280, y=380)
 
-    label_data_fim = tk.Label( text="Data Fim CF-e (AAAA-MM-DD):", fg='white', bg='#051931')
+    label_data_fim = tk.Label(text="Data Fim(AAAA-MM-DD):", fg='white', bg='#051931')
     label_data_fim.pack()
     label_data_fim.place(x=100, y=400)
 
@@ -428,14 +448,14 @@ if fazer_login():
 
 
     # Botão para buscar os CF-e
-    button_buscar = tk.Button( text="Buscar XML CF-e", command=buscar, fg='white', bg='#051931')
+    button_buscar = tk.Button(root, text="Buscar XML", command=buscar, fg='white', bg='#051931')
     button_buscar.pack()
     button_buscar.place(x=328, y=465)
 
     #Botão para exportar os CF-e
-    button_exportar = tk.Button( text="Exportar XML CF-e", command=exportar, fg='white', bg='#051931')
+    button_exportar = tk.Button(root, text="Exportar XML", command=exportar, fg='white', bg='#051931')
     button_exportar.pack()
-    button_exportar.place(x=428, y=465)
+    button_exportar.place(x=399, y=465)
 
     # Botão para pesquisar as cidades
     pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#051931')
@@ -447,7 +467,7 @@ if fazer_login():
     # Botão para parar os serviços
     parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
     parar_servicos_button.pack()
-    parar_servicos_button.place(x=535, y=465)
+    parar_servicos_button.place(x=480, y=465)
 
     # Botão para conceder permissões
     conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
@@ -472,7 +492,7 @@ if fazer_login():
     resultado_text.pack(side=tk.BOTTOM)
 
     #Versão release
-    versao_release = "Versão 1.1.0"
+    versao_release = "Versão 1.1.1"
     versao_release = tk.Label(root, text=versao_release, fg= 'white', bg= '#051931')
     versao_release.pack(side=tk.BOTTOM)
 
