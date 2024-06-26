@@ -13,7 +13,7 @@ from urllib.parse import quote_plus
 import pymongo
 import ctypes
 from tkinter import messagebox
-from PIL import Image as PilImage
+from PIL import Image, ImageTk, ImageEnhance
 from datetime import datetime, timedelta
 import platform
 
@@ -139,9 +139,6 @@ def parar_servicos():
   
 def executar_backup():
     try:
-        # Mapear o caminho UNC para uma unidade de rede (por exemplo, Z:)
-        #subprocess.run(['net', 'use', 'Z:', '\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao'], shell=True, check=True)
-        # Definir o diretório de origem e destino para a cópia de arquivos
         origem = r'C:\DigiSat\SuiteG6\Dados'
         destino = r'D:\DadosBkp'
         if not os.path.exists(destino):
@@ -151,12 +148,6 @@ def executar_backup():
         messagebox.showinfo("Backup", "Backup gerado com sucesso! :)")
     except Exception as e:
         messagebox.showinfo("Error", f"Erro ao executar o backup: {e}")
-    #except Exception as e:
-        #print(f"Erro durante o processo de cópia: {e}")
-    #finally:
-        # Remover o mapeamento da unidade de rede (Z:)
-        #subprocess.run(['net', 'use', 'Z:', '/delete'], shell=True, check=True)
-
 
 def repair_mongo():
     try:
@@ -198,7 +189,7 @@ def buscar():
         documentos.clear()
         query = {}
         
-        if tipo_busca == "CF-e" or tipo_busca == "NFC-e":
+        if tipo_busca in ["CF-e", "NFC-e", "NF-e Saída", "NF-e Entrada"]:
                 if data_inicio and data_fim:
                     try:
                         data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
@@ -219,14 +210,41 @@ def buscar():
                             Historicos = documento.get("Historicos", [])
                             for historico in Historicos:                               
                                     xml = historico.get("Xml")
-                                    
                                     if xml:
                                         documento_copia = documento.copy()
                                         documento_copia["Xml"] = xml
                                         documentos.append(documento_copia)
                                         print(f"Documento adicionado: {documento_copia}")
                                     else:
-                                        print(f"Valor de 'Xml' encontrado: {xml}")    
+                                        print(f"Valor de 'Xml' encontrado: {xml}")   
+
+                elif tipo_busca == "NF-e Saída":
+                        _t = documento.get("_t",{})
+                        if "NotaFiscalEletronicaSaida" in _t:
+                            Historicos = documento.get("Historicos", [])
+                            for historico in Historicos:
+                                xml = historico.get("Xml")
+                                if xml:
+                                    documento_copia = documento.copy()
+                                    documento_copia["Xml"] = xml
+                                    documentos.append(documento_copia)
+                                    print(f"Documento adicionado: {documento_copia}")
+                                else:
+                                    print(f"Valor de 'Xml' encontrado: {xml}")
+                elif tipo_busca == "NF-e Entrada":
+                    _t= documento.get("_t",{})
+                    if "NotaFiscalEletronicaEntrada" in _t:
+                        Historicos = documento.get("Historicos",[])
+                        for historico in Historicos:
+                            xml = historico.get("Xml")
+                            if xml:
+                                documento_copia = documento.copy()
+                                documento_copia["Xml"] = xml
+                                documentos.append(documento_copia)
+                                print(f"Documento adicionado: {documento_copia}")
+                            else:
+                                print(f"Valor de 'Xml' encontrado: {xml}")
+
         if documentos:
             messagebox.showinfo("Sucesso", "Documentos encontrados. Prontos para exportar.")
         else:
@@ -291,7 +309,6 @@ def exportar():
 
 
 def senha_alternada():
-        # Obter a data e hora atual
     now = datetime.now()
     
     # Extrair informações de data e hora
@@ -328,49 +345,54 @@ def fazer_login():
             if messagebox.askokcancel("Sair", "Você quer sair sem fazer login?"):
                 login_window.destroy()
         else:
-            login_window.destroy()        
-   
+            login_window.destroy()  
+
+    def on_closing():
+        login_window.destroy()
+
     # Criar a janela de login
     login_window = tk.Tk()
     login_window.title("Login")
-    login_window.configure(bg='#051931')
+    login_window.configure(bg='#0190f6')
     login_window.protocol("WM_DELETE_WINDOW", on_closing)
+
+    # Calcular a cor do gradiente na posição do logo
     
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
     logo = logo.resize((280, 120))
-    logo = ImageTk.PhotoImage(logo)
-    logo_label = tk.Label(image=logo, bg='#051931')
-    logo_label.image = logo
-    logo_label.pack()
+    logo_tk = ImageTk.PhotoImage(logo)
+    logo_label = tk.Label(login_window, image=logo_tk, bg= '#0190f6')
+    logo_label.image = logo_tk
     logo_label.place(x=130, y=80)
 
-    label_usuario = tk.Label(login_window, text="Usuário:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
+    
+    label_usuario = tk.Label(login_window, text="Usuário:", fg='black', font=("Arial", 10, "bold"), bg='#0190f6')
     label_usuario.place(x=150, y=220)
 
-    entry_usuario = tk.Entry(login_window, fg='white', bg='#051931')
+    entry_usuario = tk.Entry(login_window, fg='black',bg='#0190f6')
     entry_usuario.place(x=210, y=220)
 
-    label_senha = tk.Label(login_window, text="Senha:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
+    label_senha = tk.Label(login_window, text="Senha:", fg='black', font=("Arial", 10, "bold"), bg='#0190f6')
     label_senha.place(x=150, y=250)
 
-    entry_senha = tk.Entry(login_window, show="*", fg='white', bg='#051931')
+    entry_senha = tk.Entry(login_window, show="*", fg='black', bg='#0190f6')
     entry_senha.place(x=210, y=250)
 
-    button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='white', bg='#051931')
+    button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='black', bg='#0190f6')
     button_login.pack()
     button_login.place(x=225, y=300)
-          
+    
     #Versão release
-    versao_release = "Versão 1.1.0"
-    versao_release = tk.Label(text=versao_release, fg= 'white', bg= '#051931')
+    versao_release = "Versão 1.1.3"
+    versao_release = tk.Label(text=versao_release, fg= 'black', bg='#0190f6')
     versao_release.pack(side=tk.BOTTOM)
     
     #informativo suporte
-    suporte = tk.Label(text='Uso exclusivo suporte', bg= '#051931', fg='white', font=('Arial', 10, 'bold'))
+    suporte = tk.Label(text='Uso exclusivo suporte', fg='black', font=('Arial', 10, 'bold'),bg='#0190f6')
     suporte.pack(side=tk.BOTTOM)
 
     # Rodapé
-    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Arial', 10, 'bold'))
+    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', fg='black', font=('Arial', 10, 'bold'), bg='#0190f6')
     rodape_label.pack(side=tk.BOTTOM)
 
     #Icone do APP
@@ -389,8 +411,8 @@ def fazer_login():
 if fazer_login():
          
     root = tk.Tk()
-    root.title("Digisat NFS-e")
-    root.configure(bg='#051931')
+    root.title("OneClick")
+    root.configure(bg='#0190f6')
 
     #Icone do APP
     icon_path =r"\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico"
@@ -401,7 +423,7 @@ if fazer_login():
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
     logo = logo.resize((250, 100))
     logo = ImageTk.PhotoImage(logo)
-    logo_label = tk.Label(root, image=logo, bg='#051931')
+    logo_label = tk.Label(root, image=logo, bg='#0190f6')
     logo_label.image = logo
     logo_label.pack()
 
@@ -409,99 +431,102 @@ if fazer_login():
     NFSe = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\NFSe.jpg")
     NFSe = NFSe.resize((70, 50))
     NFSe = ImageTk.PhotoImage(NFSe)
-    NFSe_label = tk.Label(root, image=NFSe, bg='#051931')
+    NFSe_label = tk.Label(root, image=NFSe, bg='#0190f6')
     NFSe_label.image = NFSe
     NFSe_label.pack()
-    NFSe_label.place(x=0, y=510)
+    NFSe_label.place(x=0, y=708)
 
 
     # Frame para a entrada de cidade
-    pesquisa_frame = tk.Frame(root, bg='#051931')
+    pesquisa_frame = tk.Frame(root, bg='#0190f6')
     pesquisa_frame.pack(pady=1)
 
-    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='white', font=("Arial", 10, "bold"), bg='#051931')
+    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='black', font=("Arial", 10, "bold"), bg='#0190f6')
     cidade_label.grid(row=0, column=0)
 
     cidade_entry = tk.Entry(pesquisa_frame)
     cidade_entry.grid(row=0, column=1)
     cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())  
+    
+    var_tipo_busca = tk.StringVar(value="CF-e")
+    tk.Label(root, text="Tipo de Busca:", fg='black', bg='#0190f6', font=('Arial', 10,'bold')).place(x=165, y=420)
+    option_menu =tk.OptionMenu(root, var_tipo_busca, "CF-e", "NFC-e", "NF-e Saída", "NF-e Entrada")
+    option_menu.place(x=263, y=410)
+    option_menu.config(bg='#ffffff', fg='black')
+    
 
-    var_tipo_busca = tk.StringVar(value= "CF-e")
-    tk.Label(root, text="Tipo de Busca", fg='white', bg='#051931')
-    tk.OptionMenu(root, var_tipo_busca, "CF-e", "NFC-e"). pack()
-
-    label_data_inicio = tk.Label (text="Data Início(AAAA-MM-DD):", fg='white', bg='#051931')
+    label_data_inicio = tk.Label (text="Data Início(AAAA-MM-DD):", fg='black', bg='#0190f6', font=('Arial',10,'bold'))
     label_data_inicio.pack()
-    label_data_inicio.place(x=90, y=380)
+    label_data_inicio.place(x=90, y=445)
 
     entry_data_inicio = tk.Entry()
     entry_data_inicio.pack()
-    entry_data_inicio.place(x=280, y=380)
+    entry_data_inicio.place(x=260, y=445)
 
-    label_data_fim = tk.Label(text="Data Fim(AAAA-MM-DD):", fg='white', bg='#051931')
+    label_data_fim = tk.Label(text="Data Fim(AAAA-MM-DD):", fg='black',font=('Arial',10, 'bold'), bg='#0190f6')
     label_data_fim.pack()
-    label_data_fim.place(x=100, y=400)
+    label_data_fim.place(x=100, y=465)
 
     entry_data_fim = tk.Entry()
     entry_data_fim.pack()
-    entry_data_fim.place(x=280, y=400)
+    entry_data_fim.place(x=260, y=465)
 
 
     # Botão para buscar os CF-e
-    button_buscar = tk.Button(root, text="Buscar XML", command=buscar, fg='white', bg='#051931')
+    button_buscar = tk.Button(root, text="Buscar XML", command=buscar, fg='black', bg='#0190f6')
     button_buscar.pack()
-    button_buscar.place(x=328, y=465)
+    button_buscar.place(x=328, y=565)
 
     #Botão para exportar os CF-e
-    button_exportar = tk.Button(root, text="Exportar XML", command=exportar, fg='white', bg='#051931')
+    button_exportar = tk.Button(root, text="Exportar XML", command=exportar, fg='black', bg='#0190f6')
     button_exportar.pack()
-    button_exportar.place(x=399, y=465)
+    button_exportar.place(x=399, y=565)
 
     # Botão para pesquisar as cidades
-    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#051931')
+    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='black', bg='#0190f6')
     pesquisar_button_arquivo1.grid(row=0, column=2, padx=8)
 
-    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='white', bg='#051931')
+    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='black', bg='#0190f6')
     pesquisar_button_arquivo2.grid(row=0, column=3)
 
     # Botão para parar os serviços
-    parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#051931')
+    parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='black', bg='#0190f6')
     parar_servicos_button.pack()
-    parar_servicos_button.place(x=480, y=465)
+    parar_servicos_button.place(x=480, y=565)
 
     # Botão para conceder permissões
-    conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#051931')
+    conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='black', bg='#0190f6')
     conceder_permissao_button.pack()
-    conceder_permissao_button.place(x=205, y=465)
+    conceder_permissao_button.place(x=205, y=565)
 
     #Botão para gerar backup do sistema
-    executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#051931')
+    executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='black', bg='#0190f6')
     executar_backup_button.pack()
-    executar_backup_button.place(x=35, y=465)
+    executar_backup_button.place(x=35, y=565)
 
     #Botão para repar o mongo e também para serviços
-    repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#051931')
+    repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='black', bg='#0190f6')
     repair_mongo_button.pack()
-    repair_mongo_button.place(x=113, y=465)
+    repair_mongo_button.place(x=113, y=565)
 
     # Frame para exibir resultados
-    resultado_frame = tk.Frame(root, bg='#051931')
+    resultado_frame = tk.Frame(root, bg='#0190f6')
     resultado_frame.pack(pady=20, padx=10)
 
-    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Arial", 10, 'bold'), bg='#051931')
+    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='black', font=("Arial", 10, 'bold'), bg='#0190f6')
     resultado_text.pack(side=tk.BOTTOM)
 
     #Versão release
-    versao_release = "Versão 1.1.1"
-    versao_release = tk.Label(root, text=versao_release, fg= 'white', bg= '#051931')
+    versao_release = "Versão 1.1.3"
+    versao_release = tk.Label(root, text=versao_release, fg= 'black', bg= '#0190f6')
     versao_release.pack(side=tk.BOTTOM)
 
     # Rodapé
-    rodape_label = tk.Label(root,text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#051931', fg='white', font=('Arial', 10, 'bold'))
+    rodape_label = tk.Label(root,text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#0190f6', fg='black', font=('Arial', 10, 'bold'))
     rodape_label.pack(side=tk.BOTTOM)
 
     largura= 650
-    altura= 560
+    altura= 760
     root.geometry (f"{largura}x{altura}")
     root.resizable(False, False)
    
