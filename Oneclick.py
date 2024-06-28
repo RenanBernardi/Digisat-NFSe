@@ -16,7 +16,7 @@ from tkinter import messagebox
 from PIL import Image, ImageTk, ImageEnhance
 from datetime import datetime, timedelta
 import platform
-
+import traceback
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
     result = unicodedata.normalize('NFD', texto_sem_espacos).encode('ascii', 'ignore').decode('utf-8')
@@ -307,6 +307,24 @@ def exportar():
     else:
         messagebox.showwarning("Aviso", "Nenhum documento encontrado. Por favor, busque primeiro.")
 
+def create_gradient(width, height):
+    base = Image.new('RGB', (width, height))
+    top_color = (1, 144, 246)
+    bottom_color = (5, 25, 49)
+
+    for i in range(height):
+        r = int(top_color[0] + (bottom_color[0] - top_color[0]) * i / height)
+        g = int(top_color[0] + (bottom_color[0] - top_color[0]) * i / height)
+        b = int(top_color[0] + (bottom_color[0] - top_color[0]) * i / height)
+        base.paste((r, g, b), (0, i, width, i+1))
+
+    return base
+
+def get_gradient_color(y, height, top_color, bottom_color):
+    r = int(top_color[0] + (bottom_color[0] - top_color[0]) * y / height)
+    g = int(top_color[0] + (bottom_color[0] - top_color[0]) * y / height)
+    b = int(top_color[0] + (bottom_color[0] - top_color[0]) * y / height)
+    return f'#{r:02x}{g:02x}{b:02x}'
 
 def senha_alternada():
     now = datetime.now()
@@ -349,50 +367,60 @@ def fazer_login():
 
     def on_closing():
         login_window.destroy()
-
+   
     # Criar a janela de login
     login_window = tk.Tk()
     login_window.title("Login")
-    login_window.configure(bg='#0f55a2')
+    #login_window.configure(bg='#0f55a2')
+    width, height = 500, 500
+    background_image = create_gradient(width, height)
+    background_image_tk = ImageTk.PhotoImage(background_image)
     login_window.protocol("WM_DELETE_WINDOW", on_closing)
-
+    login_window.backgound_image_tk = background_image_tk
+    background_label = tk.Label(login_window, image=background_image_tk)
+    background_label.place(relheight=1, relwidth=1)
+    
     # Calcular a cor do gradiente na posição do logo
     
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
     logo = logo.resize((280, 120))
     logo_tk = ImageTk.PhotoImage(logo)
-    logo_label = tk.Label(login_window, image=logo_tk, bg= '#0f55a2')
+    logo_label = tk.Label(login_window, image=logo_tk, bg= get_gradient_color(80, height, (1, 144,246),(5, 25, 49)))
     logo_label.image = logo_tk
     logo_label.place(x=130, y=80)
 
     
-    label_usuario = tk.Label(login_window, text="Usuário:", fg='black', font=("Arial", 10, "bold"), bg='#0f55a2')
+    label_usuario = tk.Label(login_window, text="Usuário:", fg='green', font=("Arial", 10, "bold"), bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     label_usuario.place(x=150, y=220)
 
-    entry_usuario = tk.Entry(login_window, fg='white',bg='#0f55a2')
+    entry_usuario = tk.Entry(login_window, fg='green',bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     entry_usuario.place(x=210, y=220)
 
-    label_senha = tk.Label(login_window, text="Senha:", fg='black', font=("Arial", 10, "bold"), bg='#0f55a2')
+    label_senha = tk.Label(login_window, text="Senha:", fg='green', font=("Arial", 10, "bold"),bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     label_senha.place(x=150, y=250)
 
-    entry_senha = tk.Entry(login_window, show="*", fg='white', bg='#0f55a2')
+    entry_senha = tk.Entry(login_window, show="*", fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     entry_senha.place(x=210, y=250)
 
-    button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='black', bg='#0f55a2', bd=5, relief='raised', font=('Helvetica',10, 'bold'))
+    button_login = tk.Button(login_window, text="Login", command=tentar_login, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=5, relief='ridge', font=('Helvetica',10, 'bold'))
     button_login.pack()
     button_login.place(x=225, y=300)
     
+    #button_info = tk.Button(text= "!", command=exibir_conteudo_arquivo)
+    #button_info.pack()
+    #button_info.place(x=485, y=1)
+
     #Versão release
     versao_release = "Versão 1.1.3"
-    versao_release = tk.Label(text=versao_release, fg= 'white', bg='#0f55a2')
+    versao_release = tk.Label(text=versao_release, fg= 'green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     versao_release.pack(side=tk.BOTTOM)
     
     #informativo suporte
-    suporte = tk.Label(text='Uso exclusivo suporte', fg='black', font=('Arial', 10, 'bold'),bg='#0f55a2')
+    suporte = tk.Label(text='Uso exclusivo suporte', fg='green', font=('Arial', 10, 'bold'),bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     suporte.pack(side=tk.BOTTOM)
 
     # Rodapé
-    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', fg='black', font=('Arial', 10, 'bold'), bg='#0f55a2')
+    rodape_label = tk.Label(text= 'Desenvolvido por Renan Bernardi Haefliger', fg='green', font=('Arial', 10, 'bold'), bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     rodape_label.pack(side=tk.BOTTOM)
 
     #Icone do APP
@@ -412,7 +440,23 @@ if fazer_login():
          
     root = tk.Tk()
     root.title("OneClick")
-    root.configure(bg='#0f55a2')
+    #root.configure(bg='#0f55a2')
+    width, height = 650,760
+    background_image = create_gradient(width, height)
+    background_image_tk = ImageTk.PhotoImage(background_image)
+
+    # Manter referências aos objetos PhotoImage
+    root.background_image_tk = background_image_tk
+
+    background_label = tk.Label(root, image=background_image_tk)
+    background_label.place(relwidth=1, relheight=1)
+
+    # Calcular a cor do gradiente na posição do logo
+    logo_y_position = 80
+    top_color = (1, 144, 246)
+    bottom_color = (5, 25, 49)
+    logo_bg_color = get_gradient_color(logo_y_position, height, top_color, bottom_color)
+
 
     #Icone do APP
     icon_path =r"\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\icone.ico"
@@ -423,89 +467,90 @@ if fazer_login():
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
     logo = logo.resize((250, 100))
     logo = ImageTk.PhotoImage(logo)
-    logo_label = tk.Label(root, image=logo, bg='#0f55a2')
+    logo_label = tk.Label(root, image=logo, bg=get_gradient_color(90, height, (1, 144, 246), (5, 25, 49)))
     logo_label.image = logo
     logo_label.pack()
+    
 
     #Logo NFS-e
     NFSe = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\NFSe.jpg")
     NFSe = NFSe.resize((70, 50))
     NFSe = ImageTk.PhotoImage(NFSe)
-    NFSe_label = tk.Label(root, image=NFSe, bg='#0f55a2')
+    NFSe_label = tk.Label(root, image=NFSe, bg=logo_bg_color)
     NFSe_label.image = NFSe
     NFSe_label.pack()
     NFSe_label.place(x=0, y=708)
 
 
-    # Frame para a entrada de cidade
-    pesquisa_frame = tk.Frame(root, bg='#0f55a2')
+        # Frame para a entrada de cidade
+    pesquisa_frame = tk.Frame(root, bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     pesquisa_frame.pack(pady=1)
 
-    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='yellow', font=("Arial", 10, "bold"), bg='#0f55a2')
+    cidade_label = tk.Label(pesquisa_frame, text="Cidade + UF:", fg='green', font=("Arial", 10, "bold"), bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     cidade_label.grid(row=0, column=0)
 
     cidade_entry = tk.Entry(pesquisa_frame)
     cidade_entry.grid(row=0, column=1)
-    cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())  
-    
-    var_tipo_busca = tk.StringVar(value="CF-e")
-    tk.Label(root, text="Tipo de Busca:", fg='yellow', bg='#0f55a2', font=('Arial', 10,'bold')).place(x=165, y=420)
-    option_menu =tk.OptionMenu(root, var_tipo_busca, "CF-e", "NFC-e", "NF-e Saída", "NF-e Entrada")
-    option_menu.place(x=263, y=410)
-    option_menu.config(bg='#000000', fg='red')
-    
+    cidade_entry.bind("<Return>", lambda event: pesquisar_cidade_homologada())
 
-    label_data_inicio = tk.Label (text="Data Início(AAAA-MM-DD):", fg='yellow', bg='#0f55a2', font=('Arial',10,'bold'))
+    var_tipo_busca = tk.StringVar(value="CF-e")
+    tipo_busca_label = tk.Label(root, text="Tipo de Busca:", fg='green', bg=get_gradient_color(420, height, (1, 144, 246), (5, 25, 49)), font=('Arial', 10, 'bold'))
+    tipo_busca_label.place(x=165, y=420)
+
+    option_menu = tk.OptionMenu(root, var_tipo_busca, "CF-e", "NFC-e", "NF-e Saída", "NF-e Entrada")
+    option_menu.place(x=263, y=410)
+    option_menu.config(bg=get_gradient_color(410, height, (1, 144, 246), (5, 25, 49)), fg='green')
+
+    label_data_inicio = tk.Label(root, text="Data Início(AAAA-MM-DD):", fg='green', bg=get_gradient_color(445, height, (1, 144, 246), (5, 25, 49)), font=('Arial', 10, 'bold'))
     label_data_inicio.pack()
     label_data_inicio.place(x=90, y=445)
 
-    entry_data_inicio = tk.Entry()
+    entry_data_inicio = tk.Entry(root)
     entry_data_inicio.pack()
     entry_data_inicio.place(x=260, y=445)
 
-    label_data_fim = tk.Label(text="Data Fim(AAAA-MM-DD):", fg='yellow',font=('Arial',10, 'bold'), bg='#0f55a2')
+    label_data_fim = tk.Label(root, text="Data Fim(AAAA-MM-DD):", fg='green', font=('Arial', 10, 'bold'), bg=get_gradient_color(465, height, (1, 144, 246), (5, 25, 49)))
     label_data_fim.pack()
     label_data_fim.place(x=100, y=465)
 
-    entry_data_fim = tk.Entry()
+    entry_data_fim = tk.Entry(root)
     entry_data_fim.pack()
     entry_data_fim.place(x=260, y=465)
 
-
     # Botão para buscar os CF-e
-    button_buscar = tk.Button(root, text="Buscar XML", command=buscar, fg='white', bg='#0f55a2')
+    button_buscar = tk.Button(root, text="Buscar XML", command=buscar, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
     button_buscar.pack()
     button_buscar.place(x=328, y=565)
 
-    #Botão para exportar os CF-e
-    button_exportar = tk.Button(root, text="Exportar XML", command=exportar, fg='white', bg='#0f55a2')
+    # Botão para exportar os CF-e
+    button_exportar = tk.Button(root, text="Exportar XML", command=exportar, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
     button_exportar.pack()
     button_exportar.place(x=399, y=565)
 
     # Botão para pesquisar as cidades
-    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='white', bg='#0f55a2',bd=4, relief='raised')
+    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=4, relief='raised')
     pesquisar_button_arquivo1.grid(row=0, column=2, padx=8)
 
-    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='white', bg='#0f55a2', bd=4, relief='raised')
+    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=4, relief='raised')
     pesquisar_button_arquivo2.grid(row=0, column=3)
 
     # Botão para parar os serviços
-    parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='white', bg='#0f55a2')
+    parar_servicos_button = tk.Button(root, text="Parar Serviços", command=parar_servicos, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
     parar_servicos_button.pack()
     parar_servicos_button.place(x=480, y=565)
 
     # Botão para conceder permissões
-    conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='white', bg='#0f55a2')
+    conceder_permissao_button = tk.Button(root, text="Conceder Permissões", command=conceder_permissao, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
     conceder_permissao_button.pack()
     conceder_permissao_button.place(x=205, y=565)
 
-    #Botão para gerar backup do sistema
-    executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='white', bg='#0f55a2')
+    # Botão para gerar backup do sistema
+    executar_backup_button = tk.Button(root, text="Fazer Backup", command=executar_backup, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
     executar_backup_button.pack()
     executar_backup_button.place(x=35, y=565)
 
-    #Botão para repar o mongo e também para serviços
-    repair_mongo_button = tk.Button(root, text="Reparar Mongo", command= repair_mongo, fg='white', bg='#0f55a2')
+    # Botão para reparar o mongo e também para serviços
+    repair_mongo_button = tk.Button(root, text="Reparar Mongo", command=repair_mongo, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
     repair_mongo_button.pack()
     repair_mongo_button.place(x=113, y=565)
 
@@ -513,23 +558,22 @@ if fazer_login():
     resultado_frame = tk.Frame(root, bg='#0f55a2')
     resultado_frame.pack(pady=20, padx=10)
 
-    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='white', font=("Arial", 10, 'bold'), bg='#0f55a2')
+    resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='green', font=("Arial", 10, 'bold'), bg=get_gradient_color(600, height, (1, 144, 246), (5, 25, 49)))
     resultado_text.pack(side=tk.BOTTOM)
 
-    #Versão release
+    # Versão release
     versao_release = "Versão 1.1.3"
-    versao_release = tk.Label(root, text=versao_release, fg= 'black', bg= '#0f55a2')
+    versao_release = tk.Label(root, text=versao_release, fg='green', bg=get_gradient_color(700, height, (1, 144, 246), (5, 25, 49)))
     versao_release.pack(side=tk.BOTTOM)
 
     # Rodapé
-    rodape_label = tk.Label(root,text= 'Desenvolvido por Renan Bernardi Haefliger', bg='#0f55a2', fg='black', font=('Arial', 10, 'bold'))
+    rodape_label = tk.Label(root, text='Desenvolvido por Renan Bernardi Haefliger', bg=get_gradient_color(720, height, (1, 144, 246), (5, 25, 49)), fg='green', font=('Arial', 10, 'bold'))
     rodape_label.pack(side=tk.BOTTOM)
 
-    largura= 650
-    altura= 760
-    root.geometry (f"{largura}x{altura}")
+    largura = 650
+    altura = 760
+    root.geometry(f"{largura}x{altura}")
     root.resizable(False, False)
-   
     root.mainloop()
 else:
     print("Não logado")
