@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import Tk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageOps
 from xml.etree import ElementTree as ET
 import unicodedata
 import os
