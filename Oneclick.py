@@ -12,11 +12,11 @@ from datetime import datetime
 from urllib.parse import quote_plus
 import pymongo
 import ctypes
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from PIL import Image, ImageTk, ImageEnhance
 from datetime import datetime, timedelta
 import platform
-import traceback
+
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
     result = unicodedata.normalize('NFD', texto_sem_espacos).encode('ascii', 'ignore').decode('utf-8')
@@ -379,14 +379,16 @@ def fazer_login():
     login_window.backgound_image_tk = background_image_tk
     background_label = tk.Label(login_window, image=background_image_tk)
     background_label.place(relheight=1, relwidth=1)
+    style = ttk.Style()
+    style.theme_use('clam')
+
     
-    # Calcular a cor do gradiente na posição do logo
-    
+    #logo
     logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
     logo = logo.resize((280, 120))
-    logo_tk = ImageTk.PhotoImage(logo)
-    logo_label = tk.Label(login_window, image=logo_tk, bg= get_gradient_color(80, height, (1, 144,246),(5, 25, 49)))
-    logo_label.image = logo_tk
+    logo = ImageTk.PhotoImage(logo)
+    logo_label = tk.Label(login_window, image=logo, bg= get_gradient_color(80, height, (1, 144,246),(5, 25, 49)))
+    logo_label.image = logo
     logo_label.place(x=130, y=80)
 
     
@@ -444,6 +446,8 @@ if fazer_login():
     width, height = 650,760
     background_image = create_gradient(width, height)
     background_image_tk = ImageTk.PhotoImage(background_image)
+    
+
 
     # Manter referências aos objetos PhotoImage
     root.background_image_tk = background_image_tk
@@ -528,10 +532,10 @@ if fazer_login():
     button_exportar.place(x=399, y=565)
 
     # Botão para pesquisar as cidades
-    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=4, relief='raised')
+    pesquisar_button_arquivo1 = tk.Button(pesquisa_frame, text="Pesquisar (Cidades Homologadas)", command=pesquisar_cidade_homologada, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=4, relief='groove')
     pesquisar_button_arquivo1.grid(row=0, column=2, padx=8)
 
-    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=4, relief='raised')
+    pesquisar_button_arquivo2 = tk.Button(pesquisa_frame, text="Pesquisar (No Nacional)", command=pesquisar_cidade_nacional, fg='green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)), bd=4, relief='groove')
     pesquisar_button_arquivo2.grid(row=0, column=3)
 
     # Botão para parar os serviços
