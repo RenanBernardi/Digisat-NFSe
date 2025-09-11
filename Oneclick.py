@@ -16,7 +16,8 @@ from tkinter import messagebox, ttk
 from PIL import Image, ImageTk, ImageEnhance
 from datetime import datetime, timedelta
 import platform
-
+import requests
+import re
 def tratar_input(texto):
     texto_sem_espacos = texto.replace(" ","")
     result = unicodedata.normalize('NFD', texto_sem_espacos).encode('ascii', 'ignore').decode('utf-8')
@@ -27,7 +28,6 @@ def obter_info_cidade_homologada(cidade_ou_ibge: str) -> dict:
         tree = ET.parse('C:\\DigiSat\\SuiteG6\\Servidor\\Nfse\\CidadesHomologadas.xml')
         root = tree.getroot()
         cidade_ou_ibge = tratar_input(cidade_ou_ibge)
-
 
         for item in root:
             print(f"Cidade no XML: {item.tag}")
@@ -307,6 +307,59 @@ def exportar():
     else:
         messagebox.showwarning("Aviso", "Nenhum documento encontrado. Por favor, busque primeiro.")
 
+def configurar_tags():
+    """Configura as cores das tags no widget resultado_text"""
+    resultado_text.tag_configure("ok", foreground="green", font=("Arial", 10, "bold"))
+    resultado_text.tag_configure("warning", foreground="orange", font=("Arial", 10, "bold"))
+    resultado_text.tag_configure("error", foreground="red", font=("Arial", 10, "bold"))
+def map_status(status_raw: str):
+    # normaliza: minúsculas e remove tudo que não é letra (underscore, hífen, espaço, emoji…)
+    s = (status_raw or "").strip().lower()
+    s_canon = re.sub(r'[^a-z]', '', s)
+
+    if s_canon in ("operational", "up", "available", "ok"):
+        return "ok", "Operacional ✅"
+
+    if s_canon in ("partialoutage", "degradedperformance", "minoroutage", "degraded", "partial", "limited", "maintenance", "undermaintenance", "plannedmaintenance"):
+        return "warning", "Instabilidade 🟠"
+
+    if s_canon in ("majoroutage", "outage", "down", "unavailable", "incident"):
+        return "error", "Indisponível ❌"
+
+    # fallback legível
+    legivel = (status_raw or "Indefinido").replace("_", " ").replace("-", " ").title()
+    return "warning", legivel
+
+def consultar_api_prefeituras():
+    try:
+        url = "https://monitorprefeituras.webmaniabr.com/v2/components.json"
+        resp = requests.get(url, timeout=10)
+
+        resultado_text.delete(1.0, tk.END)
+
+        if resp.status_code != 200:
+            resultado_text.insert(tk.END, f"Erro na API: {resp.status_code}\n", "error")
+            return
+
+        dados = resp.json()
+        componentes = dados.get("components", [])
+
+        if not componentes:
+            resultado_text.insert(tk.END, "Nenhum componente retornado pela API.\n", "warning")
+            return
+
+        for comp in componentes:
+            nome = comp.get("name", "Desconhecido")
+            status_raw = comp.get("status", "Indefinido")
+            tag, status_legivel = map_status(status_raw)
+            resultado_text.insert(tk.END, f"{nome}: {status_legivel}\n", tag)
+
+    except Exception as e:
+        resultado_text.delete(1.0, tk.END)
+        resultado_text.insert(tk.END, f"Erro ao consultar API: {e}\n", "error")
+
+
+
 def create_gradient(width, height):
     base = Image.new('RGB', (width, height))
     top_color = (1, 144, 246)
@@ -350,7 +403,7 @@ def fazer_login():
 
         senha_temporaria = senha_alternada()
         # Verificar se as credenciais estão corretas
-        if usuario == "Suporte" and senha == senha_temporaria:
+        if usuario == "suporte" and senha == senha_temporaria:
             login_sucesso= True
             messagebox.showinfo("Sucesso", "Login bem-sucedido!")
             login_window.destroy()
@@ -384,7 +437,7 @@ def fazer_login():
 
     
     #logo
-    logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
+    logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\logo.png")
     logo = logo.resize((280, 120))
     logo = ImageTk.PhotoImage(logo)
     logo_label = tk.Label(login_window, image=logo, bg= get_gradient_color(80, height, (1, 144,246),(5, 25, 49)))
@@ -413,7 +466,7 @@ def fazer_login():
     #button_info.place(x=485, y=1)
 
     #Versão release
-    versao_release = "Versão 1.1.3"
+    versao_release = "Versão 1.1.5"
     versao_release = tk.Label(text=versao_release, fg= 'green', bg=get_gradient_color(100, height, (1, 144, 246), (5, 25, 49)))
     versao_release.pack(side=tk.BOTTOM)
     
@@ -443,7 +496,7 @@ if fazer_login():
     root = tk.Tk()
     root.title("OneClick")
     #root.configure(bg='#0f55a2')
-    width, height = 650,760
+    width, height = 720,760
     background_image = create_gradient(width, height)
     background_image_tk = ImageTk.PhotoImage(background_image)
     
@@ -468,7 +521,7 @@ if fazer_login():
         root.iconbitmap(icon_path)
         
     # Logo da Digisat
-    logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\logo.png")
+    logo = Image.open("\\\\192.168.0.250\\Public\\Colaboradores\\Suporte\\Renan\\DigisatHomologacao\\logo.png")
     logo = logo.resize((250, 100))
     logo = ImageTk.PhotoImage(logo)
     logo_label = tk.Label(root, image=logo, bg=get_gradient_color(90, height, (1, 144, 246), (5, 25, 49)))
@@ -558,6 +611,11 @@ if fazer_login():
     repair_mongo_button.pack()
     repair_mongo_button.place(x=113, y=565)
 
+    # Botão para consultar API de prefeituras
+    consultar_api_button = tk.Button(root, text="Consultar API Prefeituras", command=consultar_api_prefeituras, fg='green', bg=get_gradient_color(565, height, (1, 144, 246), (5, 25, 49)))
+    consultar_api_button.pack()
+    consultar_api_button.place(x=560, y=565)
+
     # Frame para exibir resultados
     resultado_frame = tk.Frame(root, bg='#0f55a2')
     resultado_frame.pack(pady=20, padx=10)
@@ -565,8 +623,9 @@ if fazer_login():
     resultado_text = tk.Text(resultado_frame, width=40, height=8, padx=35, pady=35, fg='green', font=("Arial", 10, 'bold'), bg=get_gradient_color(600, height, (1, 144, 246), (5, 25, 49)))
     resultado_text.pack(side=tk.BOTTOM)
 
+    configurar_tags()
     # Versão release
-    versao_release = "Versão 1.1.3"
+    versao_release = "Versão 1.1.5"
     versao_release = tk.Label(root, text=versao_release, fg='green', bg=get_gradient_color(700, height, (1, 144, 246), (5, 25, 49)))
     versao_release.pack(side=tk.BOTTOM)
 
@@ -574,7 +633,7 @@ if fazer_login():
     rodape_label = tk.Label(root, text='Desenvolvido por Renan Bernardi Haefliger', bg=get_gradient_color(720, height, (1, 144, 246), (5, 25, 49)), fg='green', font=('Arial', 10, 'bold'))
     rodape_label.pack(side=tk.BOTTOM)
 
-    largura = 650
+    largura = 720
     altura = 760
     root.geometry(f"{largura}x{altura}")
     root.resizable(False, False)
